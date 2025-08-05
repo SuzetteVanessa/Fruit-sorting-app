@@ -3,10 +3,12 @@ import torch
 from PIL import Image
 import numpy as np
 import tempfile
+import os
 
-st.title("📊 YOLOv5 vs R-CNN Comparison")
-st.write("Upload an image to see detection results from both models.")
+st.title("🪖 Helmet Detection with YOLOv5")
+st.write("Upload an image to detect whether helmets are worn or not.")
 
+# Upload image
 uploaded_file = st.file_uploader("Upload an image", type=["jpg", "jpeg", "png"])
 
 if uploaded_file:
@@ -16,12 +18,19 @@ if uploaded_file:
     with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as tmp:
         image.save(tmp.name)
 
-        # Load YOLOv5 (replace with your path or training weights)
-        yolov5 = torch.hub.load('ultralytics/yolov5', 'yolov5s', pretrained=True)
-        yolov5_results = yolov5(tmp.name)
+        # Load custom-trained YOLOv5 model (make sure best.pt is in the same directory or provide full path)
+        model_path = "best.pt"  # Update this if your file is in a different path
+        if not os.path.exists(model_path):
+            st.error("Model file not found. Please ensure 'best.pt' is in the app directory.")
+        else:
+            model = torch.hub.load('ultralytics/yolov5', 'custom', path=model_path, force_reload=True)
 
-        # Render YOLOv5 results
-        st.image(np.squeeze(yolov5_results.render()), caption="YOLOv5 Detection", use_column_width=True)
+            # Inference
+            results = model(tmp.name)
 
-        # If you have an R-CNN model, load and predict here
-        st.info("⚠️ R-CNN prediction placeholder — add your R-CNN code here")
+            # Display detection results
+            st.image(np.squeeze(results.render()), caption="Helmet Detection Results", use_column_width=True)
+
+            # Optional: Print raw detections
+            st.write("Detection Details:")
+            st.write(results.pandas().xyxy[0])
